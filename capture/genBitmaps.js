@@ -19,11 +19,15 @@ var compareConfigFileName = config.paths.compare_data || 'compare/config.json';
 var viewports = config.viewports;
 var scenarios = config.scenarios||config.grabConfigs;
 
-var compareConfig = {testPairs:[]};
+var compareConfig = {
+  testPairs:[]
+  ,hello: 'compareConfig Variables!'
+};
 
 var casper = require("casper").create({
   // clientScripts: ["jquery.js"] // uncomment to add jQuery if you need that.
 });
+var mouse = require("mouse").create(casper);
 
 if (config.debug) {
   console.log('Debug is enabled!');
@@ -174,43 +178,158 @@ function capturePageSelectors(url,scenarios,viewports,bitmaps_reference,bitmaps_
             if ( !scenario.hasOwnProperty('selectors') ) {
               scenario.selectors = [ 'body' ];
             }
-        scenario.selectors.forEach(function(o,i,a){
-          var cleanedSelectorName = o.replace(/[^a-z0-9_\-]/gi,'');//remove anything that's not a letter or a number
-          //var cleanedUrl = scenario.url.replace(/[^a-zA-Z\d]/,'');//remove anything that's not a letter or a number
-          var fileName = scenario_index + '_' + i + '_' + cleanedSelectorName + '_' + viewport_index + '_' + vp.name + '.png';;
 
-          var reference_FP  = bitmaps_reference + '/' + fileName;
-          var test_FP       = bitmaps_test + '/' + screenshotDateTime + '/' + fileName;
+        casper.evaluate(function() {
+            var style = document.createElement('style');
+            style.innerHTML = '* { transition-property: none !important;-moz-transition-property: none !important;-webkit-transition-property: none !important;animation: none !important;-moz-animation: none !important;-webkit-animation: none !important; }';
+            document.body.appendChild(style);
+            $.fx.off = true;
+        });
 
-          var filePath      = (isReference)?reference_FP:test_FP;
+        scenario.captures.forEach(function(item, j){
+          if(item.before_capture){
+            if(item.before_capture.action == "click"){
 
+              casper.evaluate(function(selector){
+                $(selector).trigger('click');
+              },item.before_capture.selector);
 
-          if (casper.exists(o)) {
-            if (casper.visible(o)) {
-              casper.captureSelector(filePath, o);
-            } else {
-              var assetData = fs.read(hiddenSelectorPath, 'b');
-              fs.write(filePath, assetData, 'b');
+              casper.wait(1000, function(){
+                item.selectors.forEach(function(o,i,a){
+                  Refactor.capture(
+                    casper,
+                    o,
+                    i,
+                    a,
+                    j,
+                    viewport_index,
+                    vp,
+                    isReference,
+                    bitmaps_reference,
+                    bitmaps_test,
+                    screenshotDateTime,
+                    scenario_index,
+                    selectorNotFoundPath,
+                    hiddenSelectorPath,
+                    scenario.label,
+                    scenario.misMatchThreshold
+                  );
+                });
+              });
+            } else if(item.before_capture.action == "mouseover"){
+
+              casper.evaluate(function(selector){
+                $(selector).trigger('mouseenter');
+              },item.before_capture.selector);
+
+              casper.wait(1000, function(){
+                item.selectors.forEach(function(o,i,a){
+                  Refactor.capture(
+                    casper,
+                    o,
+                    i,
+                    a,
+                    j,
+                    viewport_index,
+                    vp,
+                    isReference,
+                    bitmaps_reference,
+                    bitmaps_test,
+                    screenshotDateTime,
+                    scenario_index,
+                    selectorNotFoundPath,
+                    hiddenSelectorPath,
+                    scenario.label,
+                    scenario.misMatchThreshold
+                  );
+                });
+              });
+            }else if(item.before_capture.action == "hover"){
+              casper.mouse.move(item.before_capture.selector);
+              casper.waitForSelector(item.before_capture.selector+':hover', function(){
+                item.selectors.forEach(function(o,i,a){
+                  Refactor.capture(
+                    casper,
+                    o,
+                    i,
+                    a,
+                    j,
+                    viewport_index,
+                    vp,
+                    isReference,
+                    bitmaps_reference,
+                    bitmaps_test,
+                    screenshotDateTime,
+                    scenario_index,
+                    selectorNotFoundPath,
+                    hiddenSelectorPath,
+                    scenario.label,
+                    scenario.misMatchThreshold
+                  );
+                });
+              });
             }
-          } else {
-            var assetData = fs.read(selectorNotFoundPath, 'b');
-            fs.write(filePath, assetData, 'b');
+          }else{
+              item.selectors.forEach(function(o,i,a){
+                Refactor.capture(
+                  casper,
+                  o,
+                  i,
+                  a,
+                  j,
+                  viewport_index,
+                  vp,
+                  isReference,
+                  bitmaps_reference,
+                  bitmaps_test,
+                  screenshotDateTime,
+                  scenario_index,
+                  selectorNotFoundPath,
+                  hiddenSelectorPath,
+                  scenario.label,
+                  scenario.misMatchThreshold
+                );
+              });
           }
 
+        });
 
-          if (!isReference) {
-            compareConfig.testPairs.push({
-              reference:reference_FP,
-              test:test_FP,
-              selector:o,
-              fileName:fileName,
-              label:scenario.label,
-              misMatchThreshold: scenario.misMatchThreshold
-            });
-          }
-          //casper.echo('remote capture to > '+filePath,'info');
+        // scenario.selectors.forEach(function(o,i,a){
+        //     var cleanedSelectorName = o.replace(/[^a-z0-9_\-]/gi,'');//remove anything that's not a letter or a number
+        //     //var cleanedUrl = scenario.url.replace(/[^a-zA-Z\d]/,'');//remove anything that's not a letter or a number
+        //     var fileName = scenario_index + '_' + i + '_' + cleanedSelectorName + '_' + viewport_index + '_' + vp.name + '.png';;
+        //
+        //     var reference_FP  = bitmaps_reference + '/' + fileName;
+        //     var test_FP       = bitmaps_test + '/' + screenshotDateTime + '/' + fileName;
+        //
+        //     var filePath      = (isReference)?reference_FP:test_FP;
+        //
+        //
+        //     if (casper.exists(o)) {
+        //       if (casper.visible(o)) {
+        //         casper.captureSelector(filePath, o);
+        //       } else {
+        //         var assetData = fs.read(hiddenSelectorPath, 'b');
+        //         fs.write(filePath, assetData, 'b');
+        //       }
+        //     } else {
+        //       var assetData = fs.read(selectorNotFoundPath, 'b');
+        //       fs.write(filePath, assetData, 'b');
+        //     }
+        //
+        //
+        //     if (!isReference) {
+        //       compareConfig.testPairs.push({
+        //         reference:reference_FP,
+        //         test:test_FP,
+        //         selector:o,
+        //         fileName:fileName,
+        //         label:scenario.label,
+        //         misMatchThreshold: scenario.misMatchThreshold
+        //       });
+        //     }
+        // });//end topLevelModules.forEach
 
-        });//end topLevelModules.forEach
 
       });
 
@@ -220,6 +339,68 @@ function capturePageSelectors(url,scenarios,viewports,bitmaps_reference,bitmaps_
 
 }
 
+
+var Refactor = {
+  capture: function(
+    casper,
+    o,
+    i,
+    a,
+    j,
+    viewport_index,
+    vp,
+    isReference,
+    bitmap_reference,
+    bitmap_test,
+    screenshotDateTime,
+    scenario_index,
+    selectorNotFoundPath,
+    hiddenSelectorPath,
+    captureSelector,
+    scenarioLabel,
+    scenarioMisMatchThreshold
+  ){
+    var isObject = typeof o === 'object';
+    if(isObject){
+      var oString = JSON.stringify(o);
+      var cleanedSelectorName = oString.replace(/[^a-z0-9_\-]/gi,'');
+    }else{
+      var cleanedSelectorName = o.replace(/[^a-z0-9_\-]/gi,'');
+    }
+    var fileName = scenario_index + '_' + j + '_' + i + '_' + cleanedSelectorName + '_' + viewport_index + '_' + vp.name + '.png';;
+    var reference_FP  = bitmaps_reference + '/' + fileName;
+    var test_FP       = bitmaps_test + '/' + screenshotDateTime + '/' + fileName;
+    var filePath      = (isReference)?reference_FP:test_FP;
+
+    if(isObject){
+      casper.capture(filePath, o);
+    }else{
+      if (casper.exists(o)) {
+        if (casper.visible(o)) {
+          casper.captureSelector(filePath, o);
+        } else {
+          var assetData = fs.read(hiddenSelectorPath, 'b');
+          fs.write(filePath, assetData, 'b');
+        }
+      } else {
+        var assetData = fs.read(selectorNotFoundPath, 'b');
+        fs.write(filePath, assetData, 'b');
+      }
+    }
+
+    if (!isReference) {
+      var data = {
+        reference:reference_FP,
+        test:test_FP,
+        selector:o,
+        fileName:fileName,
+        label:scenarioLabel,
+        misMatchThreshold: scenarioMisMatchThreshold
+      };
+      compareConfig.testPairs.push(data);
+    }
+  }
+};
 
 //========================
 //this query should be moved to the prior process
