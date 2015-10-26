@@ -36,12 +36,13 @@ paths.serverPidFile                 = paths.backstop + '/server.pid';
 paths.activeCaptureConfigPath       = '';
 
 if(!fs.existsSync(paths.backstopConfigFileName)){
+  console.log('Current config file location...\n ==> '+paths.captureConfigFileNameDefault);
   // console.log('\nCould not find a valid config file.');
-  console.log('\nCurrent config file location...\n ==> '+paths.backstopConfigFileName);
-  console.log('\n`$ gulp genConfig` generates a configuration boilerplate file in `' + paths.backstopConfigFileName + '`. (Will overwrite existing files.)\n')
+  // console.log('\nCurrent config file location...\n ==> '+paths.backstopConfigFileName);
+  // console.log('\n`$ gulp genConfig` generates a configuration boilerplate file in `' + paths.backstopConfigFileName + '`. (Will overwrite existing files.)\n')
   paths.activeCaptureConfigPath = paths.captureConfigFileNameDefault;
 }else{
-  // console.log('\nBackstopJS Config loaded.\n')
+  console.log('\nCurrent config file location...\n ==> '+paths.backstopConfigFileName);
   paths.activeCaptureConfigPath = paths.backstopConfigFileName;
 }
 
