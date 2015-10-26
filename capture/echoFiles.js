@@ -58,8 +58,6 @@ function capturePageSelectors(url,scenarios,viewports,bitmaps_reference,bitmaps_
     screenshotDateTime = screenshotNow.getFullYear() + pad(screenshotNow.getMonth() + 1) + pad(screenshotNow.getDate()) + '-' + pad(screenshotNow.getHours()) + pad(screenshotNow.getMinutes()) + pad(screenshotNow.getSeconds());
 
   casper.start();
-  // casper.viewport(1280,1024);
-
 
   casper.each(scenarios,function(casper, scenario, scenario_index){
 
